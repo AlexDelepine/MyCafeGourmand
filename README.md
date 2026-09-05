@@ -134,10 +134,28 @@ semantics, generate IDE JSON Schema, and perform read-only checks. See
 timestamp semantics, direct-edit rules, catalog boundaries, and deferred
 maintenance layers.
 
+## Maintain the site with an AI agent
+
+Start with [`docs/family-maintenance.md`](docs/family-maintenance.md). It gives
+plain-language requests for proposing or adding one image-free recipe, changing
+currently supported content, previewing locally, preparing a change for review,
+creating a pull request, and reporting release readiness.
+
+Agents can select the `family-site-maintainer` skill automatically. To request
+it directly, mention `/family-site-maintainer` in Copilot CLI or
+`$family-site-maintainer` in Codex.
+
+The guide keeps important approvals separate: a dry run does not authorize a
+file write; a local write does not authorize a commit or push; preparing an
+update for review does not authorize a pull request; and a pull request does
+not authorize a merge, provider action, billing change, deployment, traffic, or
+DNS change.
+
 ## Working on the repository
 
 | Task | Canonical guidance |
 | --- | --- |
+| Family-friendly maintenance entry point | [`docs/family-maintenance.md`](docs/family-maintenance.md) |
 | Engineering and migration invariants | [`AGENTS.md`](AGENTS.md) |
 | Contribution and pull request workflow | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Recipe authoring and catalog maintenance | [`content/README.md`](content/README.md) |

@@ -27,6 +27,7 @@ outside launch scope unless explicitly requested.
 
 | Task | Guidance |
 | --- | --- |
+| Family-friendly recipe, preview, review, or release-status requests | [docs/family-maintenance.md](docs/family-maintenance.md) |
 | Setup, contribution, validation, and pull requests | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Recipe authoring, schema, or catalog maintenance | [content/README.md](content/README.md) |
 | WordPress import, promotion, media plans, or source interpretation | [docs/migration-operations.md](docs/migration-operations.md) |
@@ -37,6 +38,22 @@ outside launch scope unless explicitly requested.
 Read the relevant guide before changing its implementation or running its
 operations. Skills and custom agents are optional helpers, not required review
 rituals or enforcement mechanisms; critical checks belong in code and CI.
+
+## Operator and authorization boundaries
+
+- Distinguish inspection or dry run, local file writes, commits, pushes or pull
+  requests, external-service actions, and production actions. Authorization for
+  one boundary does not authorize the next.
+- Accounts or billing, public uploads, live contact submissions, staging
+  deployments, production traffic or DNS, and private-artifact cleanup each
+  require explicit owner approval of the exact scope. Never treat available
+  credentials or work credit as approval.
+- Report actions as performed, proposed, unverified, or blocked. Give
+  nontechnical maintainers the first actionable error in plain language, but do
+  not bypass a guard or infer GitHub, provider, staging, or production readiness.
+- Keep credentials, private source, upload plans, form-message contents, and
+  personal data out of agent chat. A missing authorized input is a blocker, not
+  permission to search unrelated folders.
 
 ## Content and privacy
 
