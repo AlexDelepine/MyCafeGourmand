@@ -385,7 +385,6 @@ test("gallery rendering, sitemap, and static redirects close the public route se
     [{
       source: "/old-editorial/",
       destination: "/editorial-redirect/",
-      status: 301
     }]
   );
   assert.throws(

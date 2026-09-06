@@ -3,9 +3,11 @@
 This document defines artifact, contact, redirect, and media verification
 boundaries for the existing Azure Static Web Apps static-export architecture.
 Azure resources and the external contact provider are not yet provisioned.
-Production release is blocked until an edge provider is selected and a
-checked-in adapter deploys every exact redirect. The authoritative deployment
-sequence and artifact separation are in [`deployment.md`](deployment.md).
+The owner-approved hosting design uses Azure Static Web Apps Free and generated
+HTTP 200 legacy HTML navigation pages, not an edge provider or historical
+HTTP 301 responses. Production remains blocked until the required content,
+media/contact, hosting and live acceptance gates pass. The authoritative
+deployment sequence and artifact separation are in [`deployment.md`](deployment.md).
 
 ## Artifact classes
 
@@ -41,10 +43,11 @@ export NEXT_PUBLIC_CONTACT_FORM_ENDPOINT="https://<approved-contact-host>/<publi
 npm run build:release
 ```
 
-`build:release` currently fails before building because the edge adapter is
-absent. Once that integration exists, it must still reject invalid public
-values and perform pre-build and output validation. The media base must be
-absolute HTTPS with no
+`build:release` rejects invalid public values and performs pre-build and output
+validation, including complete generated legacy-page coverage. A successful
+local release build is not approval to deploy and does not prove live Azure
+path behavior. The canonical site origin must remain
+`https://mycafegourmand.com`. The media base must be absolute HTTPS with no
 credentials, query, or fragment. It may be a validated Blob or CDN/custom-domain
 base after that external infrastructure exists.
 
@@ -101,18 +104,28 @@ Launch remains blocked until the owner approves an accurate privacy notice for
 the selected provider and its real data flow, retention, deletion, and contact
 practices. Do not restore the obsolete WordPress privacy text.
 
-## Redirect configuration
+## Historical URL navigation
 
-Builds validate every recipe and editorial `redirectFrom` path and write
-`.deployment/redirect-manifest.json`. This versioned, provider-neutral metadata
-stays outside the public `out/` artifact. Sources are root-relative local paths
-without queries or fragments. Generated destinations are matching canonical
-locale paths with static-export trailing slashes.
+Builds validate every recipe and editorial `redirectFrom` path, generate a
+static HTML navigation page at its supported output path, and write
+`.deployment/redirect-manifest.json`. The version-2 metadata explicitly records
+`mechanism: "html-refresh"` and source/destination pairs, not HTTP 301 statuses.
+It stays outside the public `out/` artifact. Sources are root-relative local
+paths without queries or fragments. Destinations are matching canonical locale
+paths with static-export trailing slashes.
+
+Each legacy page has an immediate meta refresh, matching canonical URL and
+localized fallback link, with no JavaScript requirement. It returns HTTP 200.
+Google recognizes immediate refresh as a permanent signal, but server-side
+redirects are preferable when available and non-browser clients may not follow
+HTML refresh. The owner accepted this tradeoff for simpler Azure-only hosting.
+Do not silently substitute JavaScript-only redirects or claim HTTP 301 behavior.
 
 The separate `out/staticwebapp.config.json` is limited to 20,000 UTF-8 bytes and
 contains the origin trailing-slash policy and baseline headers, not the
-historical redirect catalog. See [`deployment.md`](deployment.md) for the exact
-manifest shape, stale-output cleanup, provider integration, and staged CSP.
+historical navigation catalog. See [`deployment.md`](deployment.md) for the
+manifest shape, safe legacy output generation, stale-output handling and
+staging-only submission policy.
 
 Keep unrelated hand-authored Azure routes, headers, and fallback settings in
 `config/staticwebapp.config.json`. Never place a hand-authored copy in
@@ -124,9 +137,10 @@ Keep unrelated hand-authored Azure routes, headers, and fallback settings in
 - redirect cycles;
 - wildcard redirect routes whose cycles cannot be proven statically.
 
-The migration promises exact redirects only for published source permalinks,
+The migration preserves old-link navigation only for published source permalinks,
 safe `_wp_old_slug` values on the same source parent, and enabled exact
-Redirection URL/301 rows that terminate at promoted content. It does not
+Redirection URL/301 rows that terminate at promoted content. The latter describes
+the source evidence, not the new site's HTTP response status. It does not
 promise taxonomy, feed, attachment, print, shortlink, or arbitrary WordPress
 compatibility.
 
@@ -187,11 +201,13 @@ Before a production artifact can be considered deployable:
 3. Combined remote media verification succeeds.
 4. The owner approves the real media origin, contact endpoint, and privacy
    notice.
-5. The checked-in edge adapter supports and verifies every exact redirect;
+5. Every historical mapping has a validated generated HTML navigation page;
    `npm run build:release` succeeds with those exact public values.
-6. The generated `out/` passes the release output validator and is uploaded
-   without rebuilding, only after complete edge redirect publication succeeds.
-   Never copy `.deployment/` into the public upload tree.
+6. The production `out/` passes the release output validator. Its staged variant
+   passes every live old-path/encoding/navigation check with noindex and
+   technically blocked ordinary form submissions. Promote the retained
+   production artifact without rebuilding or copying staging-only response
+   restrictions. Never copy `.deployment/` into the public upload tree.
 7. Inspect the rendered contact form actions in all locales and test acceptance,
    rejection, delivery, and return redirects against the approved provider.
 
