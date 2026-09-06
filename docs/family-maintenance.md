@@ -131,17 +131,19 @@ A useful status separates evidence into four groups:
 | --- | --- |
 | Local | The exact commit checked and the actual result of `npm run check` and `npm run build:ci`. These produce no deployable release. |
 | Repository | Pull-request checks plus a live administrator verification of branch protection, required checks, and security settings. Instructions or CI files do not prove those settings are enabled. |
-| External services | Owner-approved provider decisions and verified staging evidence for media, contact, redirects, static hosting, TLS, rollback, and artifact identity. Missing evidence is blocked or unverified. |
+| External services | Owner-approved provider decisions and verified staging evidence for media, contact, static legacy navigation pages, hosting, TLS, rollback, and artifact identity. Missing evidence is blocked or unverified. |
 | Production | Explicit approval and observed results for the exact production deployment, traffic, and DNS actions. Staging success is not production success. |
 
 Production release is currently blocked. `npm run build:release` intentionally
-fails until a checked-in edge adapter can deploy and verify every exact
-historical redirect. Do not pass invented environment values or add a bypass to
-make the command green.
+fails until checked-in generation and output validation prove that every
+validated historical source has a static HTTP 200 page with an immediate meta
+refresh, canonical URL, and visible fallback link that works without
+JavaScript. These pages preserve navigation but are not HTTP 301 redirects. Do
+not pass invented environment values or add a bypass to make the command green.
 
 Use [`release-operations.md`](release-operations.md) for release artifacts,
 media, and contact boundaries; [`deployment.md`](deployment.md) for hosting,
-edge redirects, staging, rollback, and production gates; and
+legacy navigation pages, staging, rollback, and production gates; and
 [`repository-operations.md`](repository-operations.md) for the one-time GitHub
 administrator checklist. A status report must never infer provider readiness
 from a plan or repository readiness from documentation alone.

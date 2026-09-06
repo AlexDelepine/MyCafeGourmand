@@ -8,7 +8,7 @@ invariants here and task-specific procedures in the linked documents.
 Replace the family's WordPress site at `mycafegourmand.com` with a maintainable,
 low-cost static recipe site. Preserve approved English, French, and Russian
 recipes, editorial pages, galleries, translations, search, categories, serving
-scaling, print views, contact functionality, SEO, and historical content redirects.
+scaling, print views, contact functionality, SEO, and historical URL compatibility.
 Comments, ratings, newsletters, ads, analytics, and social integrations are
 outside launch scope unless explicitly requested.
 
@@ -32,7 +32,7 @@ outside launch scope unless explicitly requested.
 | Recipe authoring, schema, or catalog maintenance | [content/README.md](content/README.md) |
 | WordPress import, promotion, media plans, or source interpretation | [docs/migration-operations.md](docs/migration-operations.md) |
 | Release artifacts, contact, or remote media verification | [docs/release-operations.md](docs/release-operations.md) |
-| Deployment, edge redirects, or launch gates | [docs/deployment.md](docs/deployment.md) |
+| Deployment, legacy URL navigation pages, or launch gates | [docs/deployment.md](docs/deployment.md) |
 | GitHub Actions, Copilot customization, or repository settings | [docs/repository-operations.md](docs/repository-operations.md) |
 
 Read the relevant guide before changing its implementation or running its
@@ -59,7 +59,8 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
 
 - For migrated content, the owner-authorized WordPress backup/export is the
   source of truth. Public pages, feeds, REST, sitemaps, and archives are discovery
-  evidence only; never turn discovered URLs directly into records or redirects.
+  evidence only; never turn discovered URLs directly into records or legacy
+  mappings.
 - Preserve source wording, IDs, slugs, timestamps, taxonomy, media, translation
   relationships, and intentionally missing translations. Do not invent fields
   or automatically translate content. Keep editorial content separate from
@@ -85,14 +86,17 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
   malformed escapes, dot segments, and literal percent encodings. Route lookup
   may decode one segment once to match a validated slug; do not replace validation
   with that decoding.
-- Preserve known public URLs with tested permanent `redirectFrom` entries.
-  Redirect destinations use canonical paths with trailing slashes. Validate
-  generated and hand-authored redirects together for conflicts and cycles;
-  never bypass checks with wildcards or promise arbitrary WordPress compatibility.
+- Preserve known public URLs with tested `redirectFrom` source entries. The
+  approved Azure-only release design generates one static HTTP 200 navigation
+  page per validated source, with an immediate meta refresh, canonical URL, and
+  visible fallback link; it must not require JavaScript. Destinations use
+  canonical paths with trailing slashes. Validate complete legacy-source
+  coverage, encoding, path and output collisions, and cycles; never bypass
+  checks with wildcards or promise arbitrary WordPress compatibility.
 - Keep new routes and generated assets in centralized reserved paths, static
-  route enumeration, sitemap policy, redirect checks, and output validation.
+  route enumeration, sitemap policy, legacy-mapping checks, and output validation.
 - Preserve Recipe JSON-LD, appropriate editorial/breadcrumb metadata, and
-  noindex boundaries. Prevent duplicate canonicals and redirect loops.
+  noindex boundaries. Prevent duplicate canonicals and legacy navigation loops.
 
 ## Implementation and validation
 
@@ -114,7 +118,8 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
   dynamically inside other tests. Manually check affected content/navigation
   in each locale when changing rendered output or routes.
 - Treat local/CI artifacts as nondeployable. `build:release` stays fail-closed
-  until a checked-in edge adapter deploys and verifies every exact redirect.
+  until checked-in generation and output validation prove that every exact
+  legacy source has the required static navigation page.
   Keep `.deployment/` metadata outside public `out/`.
 - Do not commit `.next/`, `next-env.d.ts`, dependencies, build outputs, generated
   search assets, logs, or private migration artifacts.

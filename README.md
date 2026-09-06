@@ -5,9 +5,9 @@ A multilingual recipe site replacing the family's WordPress website at
 
 The application is a Next.js App Router static export for Azure Static Web
 Apps. It preserves the approved English, French, and Russian recipe catalog,
-editorial pages, gallery, media relationships, SEO metadata, and permanent
-redirects from old content URLs. Root `AGENTS.md` is the canonical engineering
-and migration contract.
+editorial pages, gallery, media relationships, SEO metadata, and navigation
+from known old content URLs. Root `AGENTS.md` is the canonical engineering and
+migration contract.
 
 ## Requirements
 
@@ -76,9 +76,10 @@ npm run preview
 ```
 
 `build:local` and `build:ci` create credential-free, nondeployable artifacts.
-Production release is blocked until a checked-in edge adapter deploys all
-historical redirects. See [`docs/deployment.md`](docs/deployment.md) for the
-artifact contract and remaining launch gates, and
+Production release is blocked until checked-in generation and output validation
+prove complete static legacy-page coverage. See
+[`docs/deployment.md`](docs/deployment.md) for the artifact contract and
+remaining launch gates, and
 [`docs/release-operations.md`](docs/release-operations.md) for media and contact
 requirements.
 
@@ -113,10 +114,13 @@ retain complete recipe content.
 
 Canonical recipe slugs remain raw Unicode. Shared URL validation protects
 encoded separators, malformed or repeated percent encodings, dot segments, and
-route collisions. Validated recipe and editorial `redirectFrom` paths generate
-the provider-neutral `.deployment/redirect-manifest.json`, outside public
-`out/`. The separate `out/staticwebapp.config.json` contains bounded origin
-configuration and baseline headers, not the historical redirect catalog.
+route collisions. Validated recipe and editorial `redirectFrom` paths form the
+exact legacy mapping. The approved Azure-only release design emits one static
+HTTP 200 page for each source with an immediate meta refresh, canonical URL,
+visible fallback link, and no JavaScript dependency. Its guarded release must
+prove complete coverage and reject encoding, route, file, and canonical
+collisions. The separate `out/staticwebapp.config.json` contains bounded origin
+configuration and baseline headers.
 
 The current approved publication baseline is 522 recipes (EN/FR/RU:
 162/172/188), 27 editorial pages (10/9/8), one neutral gallery, 1,244 recipe
@@ -160,8 +164,8 @@ DNS change.
 | Contribution and pull request workflow | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Recipe authoring and catalog maintenance | [`content/README.md`](content/README.md) |
 | Authenticated WordPress operations | [`docs/migration-operations.md`](docs/migration-operations.md) |
-| Release builds, contact, redirects, and media verification | [`docs/release-operations.md`](docs/release-operations.md) |
-| Deployment artifacts, edge redirects, and launch gates | [`docs/deployment.md`](docs/deployment.md) |
+| Release builds, contact, legacy URLs, and media verification | [`docs/release-operations.md`](docs/release-operations.md) |
+| Deployment artifacts, legacy navigation pages, and launch gates | [`docs/deployment.md`](docs/deployment.md) |
 | CI, security automation, and GitHub launch gates | [`docs/repository-operations.md`](docs/repository-operations.md) |
 
 The browser editor remains deferred until a disposable private-repository test
