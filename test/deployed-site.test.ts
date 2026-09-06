@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { lstatSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { prepareStagingArtifact } from "../scripts/release-artifact";
@@ -16,8 +16,10 @@ const productionOrigin = "https://mycafegourmand.com";
 function transport(root: string, staging: boolean, mutate?: (target: string, response: SiteResponse) => SiteResponse): SiteTransport {
   return async (_origin, target, maximum) => {
     const relative = decodeURIComponent(target).slice(1);
-    const file = path.join(root, "out", relative.endsWith("/") || !relative ? `${relative}index.html` : relative);
-    const body = readFileSync(lstatSync(file).isDirectory() ? path.join(file, "index.html") : file);
+    const pagePath = relative.endsWith("/") || !relative
+      ? `${relative}index.html`
+      : path.extname(relative) ? relative : `${relative}/index.html`;
+    const body = readFileSync(path.join(root, "out", pagePath));
     assert.ok(body.length < maximum);
     const response: SiteResponse = {
       status: 200, body, headers: {

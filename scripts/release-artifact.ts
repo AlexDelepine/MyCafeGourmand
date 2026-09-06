@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
-  copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync,
-  writeFileSync
+  copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,6 +9,7 @@ import { z } from "zod";
 import { parseExactRedirectManifest } from "../src/content/redirect-manifest";
 import { portablePathComponentKey } from "../src/content/url-path";
 import { productionSiteOrigin, validateLegacyNavigationOutput } from "./legacy-navigation";
+import { readBoundedDeploymentFile, writeNewDeploymentFile } from "./deployment-files";
 
 const configName = "staticwebapp.config.json";
 const metadataName = ".deployment/release-artifact.json";
@@ -49,22 +49,7 @@ function regularDirectory(directory: string) {
 }
 
 export function readBoundedFile(root: string, relative: string, maximum = 8 * 1024 * 1024) {
-  const components = relative.split("/");
-  if (components.some((part) => !part || part === "." || part === ".." || part.includes("\\"))) {
-    throw new Error("Unsafe artifact file path.");
-  }
-  regularDirectory(root);
-  let current = root;
-  for (const part of components.slice(0, -1)) {
-    current = path.join(current, part);
-    regularDirectory(current);
-  }
-  const file = path.join(current, components.at(-1)!);
-  const stats = lstatSync(file);
-  if (!stats.isFile() || stats.isSymbolicLink() || stats.nlink !== 1 || stats.size > maximum) {
-    throw new Error("Artifact files must be bounded, unlinked regular files.");
-  }
-  return readFileSync(file);
+  return readBoundedDeploymentFile(root, relative, maximum);
 }
 
 export function inventoryOutput(output: string) {
@@ -88,11 +73,12 @@ export function inventoryOutput(output: string) {
         visit(full, `${relative}/`, depth + 1);
       } else {
         if (!stats.isFile() || stats.nlink !== 1) throw new Error("Artifact contains a nonregular file.");
-        bytes += stats.size;
-        if (bytes > 250 * 1024 * 1024 || files.length >= 15_000) {
+        if (stats.size > 250 * 1024 * 1024 - bytes || files.length >= 15_000) {
           throw new Error("Artifact exceeds Azure Free output limits.");
         }
-        files.push({ path: relative, bytes: stats.size, sha256: sha256(readFileSync(full)) });
+        const contents = readBoundedFile(output, relative, 250 * 1024 * 1024 - bytes);
+        bytes += contents.length;
+        files.push({ path: relative, bytes: contents.length, sha256: sha256(contents) });
       }
     }
   };
@@ -165,8 +151,7 @@ export function writeReleaseArtifactMetadata(projectRoot: string) {
     files
   });
   const target = path.join(root, metadataName);
-  if (existsSync(target)) throw new Error("Release metadata already exists; rebuild instead of relabeling output.");
-  writeFileSync(target, `${JSON.stringify(metadata, null, 2)}\n`, { flag: "wx" });
+  writeNewDeploymentFile(target, `${JSON.stringify(metadata, null, 2)}\n`);
   return metadata;
 }
 
@@ -214,6 +199,7 @@ export function prepareStagingArtifact(productionRoot: string, stagingRoot: stri
   mkdirSync(path.join(staging, "out"));
   mkdirSync(path.join(staging, ".deployment"));
   for (const file of metadata.files) {
+    if (file.path === configName) continue;
     const target = path.join(staging, "out", file.path);
     mkdirSync(path.dirname(target), { recursive: true });
     copyFileSync(path.join(production, "out", file.path), target);
@@ -221,7 +207,7 @@ export function prepareStagingArtifact(productionRoot: string, stagingRoot: stri
   for (const name of [metadataName, manifestName]) {
     copyFileSync(path.join(production, name), path.join(staging, name));
   }
-  writeFileSync(path.join(staging, "out", configName), stagingConfig(metadata.productionConfig));
+  writeNewDeploymentFile(path.join(staging, "out", configName), stagingConfig(metadata.productionConfig));
   validateReleaseArtifact(staging, "staging", metadata.sourceCommit);
   validateReleaseArtifact(production, "production", metadata.sourceCommit);
 }
