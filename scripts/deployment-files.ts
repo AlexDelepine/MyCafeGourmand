@@ -30,14 +30,22 @@ export function readBoundedDeploymentFile(root: string, relative: string, maximu
     return stats;
   });
   const file = path.join(directories.at(-1)!, components.at(-1)!);
-  const initial = lstatSync(file, { bigint: true });
-  if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1n || initial.size > BigInt(maximum)) {
-    throw new Error("Artifact files must be bounded, unlinked regular files.");
+  let descriptor: number;
+  try {
+    descriptor = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  } catch (error) {
+    if (error !== null && typeof error === "object" && "code" in error && error.code === "ELOOP") {
+      throw new Error("Artifact files must be bounded, unlinked regular files.", { cause: error });
+    }
+    throw error;
   }
-  const descriptor = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const opened = fstatSync(descriptor, { bigint: true });
-    if (!opened.isFile() || opened.nlink !== 1n || !pathMatchesFileDescriptor(initial, opened)) {
+    const initial = lstatSync(file, { bigint: true });
+    if (!opened.isFile() || opened.nlink !== 1n || initial.isSymbolicLink() || opened.size > BigInt(maximum)) {
+      throw new Error("Artifact files must be bounded, unlinked regular files.");
+    }
+    if (!pathMatchesFileDescriptor(initial, opened)) {
       throw new Error("Artifact changed before its descriptor was validated.");
     }
     const bytes = Buffer.alloc(Number(opened.size) + 1);
