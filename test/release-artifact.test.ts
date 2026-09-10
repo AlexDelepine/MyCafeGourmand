@@ -211,6 +211,7 @@ test("deployment workflow is manual, prebuilt, approved, serialized, and SHA pin
   assert.match(workflow, /needs: \[authorize, prepare, staging\]/u);
   assert.doesNotMatch(workflow, /\n  (push|pull_request|workflow_run):/u);
   assert.equal(workflow.match(/run: npm run build:release/gu)?.length, 1);
+  assert.doesNotMatch(workflow, /NEXT_PUBLIC_CONTACT|CONTACT_FORM_ENDPOINT/u);
   assert.equal(workflow.match(/group: azure-site-mutation/gu)?.length, 2);
   assert.equal(workflow.match(/cancel-in-progress: false/gu)?.length, 2);
   assert.equal(workflow.match(/app_location: out/gu)?.length, 2);

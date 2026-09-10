@@ -72,10 +72,7 @@ test("only the guarded release command can produce a deployable static artifact"
     scripts["staticwebapp:generate"],
     scripts["deployment:generate"]
   );
-  assert.match(
-    scripts["release:validate"],
-    /validate-release-contact-form/u
-  );
+  assert.match(scripts["release:validate"], /validate-release-media/u);
   assert.match(
     readFileSync(path.resolve(process.cwd(), ".github/workflows/ci.yml"), "utf8"),
     /npm run build:ci/u

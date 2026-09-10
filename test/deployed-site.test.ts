@@ -67,6 +67,8 @@ test("live acceptance verifies all retained bytes and all source spellings witho
     const receipt = await verifyDeployedSite(fixture.root, "production", productionOrigin, fake);
     assert.equal(receipt.checkedLegacySources, 3);
     assert.ok(receipt.checkedFiles >= 10);
+    assert.ok(requests.includes("/archive/"));
+    assert.ok(!requests.some((requested) => requested.includes("/contact/")));
     assert.ok(requests.includes("/ru/%d0%ba%d0%be%d1%82/"));
     assert.ok(requests.includes("/fr/caf%C3%A9/"));
     const receiptFile = ".deployment/production-acceptance.json";
@@ -79,6 +81,25 @@ test("live acceptance verifies all retained bytes and all source spellings witho
   }
 });
 
+test("contact-free artifacts retain generic noindex and complete file checks", async () => {
+  const fixture = releaseFixture();
+  try {
+    await verifyDeployedSite(fixture.root, "production", productionOrigin,
+      transport(fixture.root, false, (target, response) => target === "/archive/"
+        ? { ...response, headers: { ...response.headers, "x-robots-tag": "noindex" } }
+        : response));
+    await assert.rejects(verifyDeployedSite(fixture.root, "production", productionOrigin,
+      transport(fixture.root, false, (target, response) => target === "/archive/"
+        ? { ...response, status: 404 }
+        : response)), /acceptance failed/u);
+    await assert.rejects(verifyDeployedSite(fixture.root, "production", productionOrigin,
+      transport(fixture.root, false, (target, response) => target === "/archive/"
+        ? { ...response, body: Buffer.from("<p>No longer noindex</p>") }
+        : response)), /acceptance failed/u);
+  } finally {
+    fixture.cleanup();
+  }
+});
 test("staging checks noindex and browser submission blocking without modifying content", async () => {
   const fixture = releaseFixture();
   try {

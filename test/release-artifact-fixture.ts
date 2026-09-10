@@ -21,13 +21,13 @@ export function releaseFixture() {
   };
   const pages = [
     "/", "/recipes/new/", "/ru/recipes/кот/", "/fr/recipes/café/",
-    "/contact/success/", "/fr/contact/success/", "/ru/contact/success/"
+    "/archive/"
   ];
   for (const route of pages) {
     const directory = path.join(root, "out", route);
     mkdirSync(directory, { recursive: true });
     writeFileSync(path.join(directory, "index.html"),
-      `<!doctype html><html><head>${route.endsWith("/success/")
+      `<!doctype html><html><head>${route === "/archive/"
         ? '<meta name="robots" content="noindex, follow">' : ""}</head><body>${route}</body></html>`);
   }
   writeFileSync(path.join(root, "out", "staticwebapp.config.json"),

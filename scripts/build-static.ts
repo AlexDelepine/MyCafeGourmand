@@ -8,7 +8,6 @@ import {
   recipeMediaReleaseBuildModeEnvironmentVariable,
   type RecipeMediaBuildMode
 } from "../src/lib/recipe-media";
-import { assertContactFormBuildEnvironment } from "../src/lib/contact-form";
 import { cleanDeploymentMetadata } from "./deployment-metadata";
 import { assertReleaseDeploymentIntegration } from "../src/lib/release-deployment";
 import { productionSiteOrigin } from "./legacy-navigation";
@@ -91,7 +90,6 @@ export function runStaticBuild(
   return runWithDeploymentMetadataInvalidation(() => {
     if (mode === "non-release") {
       assertRecipeMediaBuildEnvironment(mode, environment);
-      assertContactFormBuildEnvironment(mode, environment);
       const buildEnvironment = { ...environment };
       delete buildEnvironment[recipeMediaReleaseBuildModeEnvironmentVariable];
       run(command("npm"), ["run", "content:validate"], buildEnvironment, root);
@@ -103,7 +101,6 @@ export function runStaticBuild(
 
     const buildEnvironment = createReleaseBuildEnvironment(environment);
     assertRecipeMediaBuildEnvironment(mode, buildEnvironment);
-    assertContactFormBuildEnvironment(mode, buildEnvironment);
     run(command("npm"), ["run", "release:validate"], buildEnvironment, root);
     run(command("npm"), ["run", "content:validate"], buildEnvironment, root);
     run(command("npm"), ["run", "search:generate"], buildEnvironment, root);

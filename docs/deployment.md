@@ -8,10 +8,20 @@ The owner chose generated legacy navigation pages rather than a requirement
 for HTTP 301 responses at every historical URL.
 
 The hosting base is **$0 within Free quotas**, without employer credits.
-Media storage/delivery, contact service, domain registration, taxes and any
+Media storage/delivery, domain registration, taxes and any
 separately approved services are additional. Free has no SLA or bandwidth
 overage; exceeding a quota requires an explicit capacity decision, not an
 automatic paid upgrade.
+
+Contact is deferred entirely: no form provider, backend, replacement email
+link or contact-delivery acceptance is required. Privacy obligations for the
+actual hosting and media services remain.
+
+**Integration prerequisite:** the companion contact-deferral application change
+must land before this workflow is used. This hosting layer stops supplying a
+contact endpoint and no longer requires contact-success routes. The dependent
+application layer removes the remaining `release:validate` contact command and
+active contact UI. Do not deploy the intermediate hosting-only revision.
 
 Official [plans](https://learn.microsoft.com/en-us/azure/static-web-apps/plans)
 and [quotas](https://learn.microsoft.com/en-us/azure/static-web-apps/quotas),
@@ -98,7 +108,7 @@ page coverage. The map remains deterministic and derived from validated
 content, not a second manually maintained catalog.
 
 `build:ci` and `build:local` generate pages for local inspection but remain
-nondeployable because their media/contact configuration is not a production
+nondeployable because their media configuration is not a production
 configuration. Never relabel those outputs as a release.
 
 `build:release` validates the real public configuration, canonical origin,
@@ -119,9 +129,8 @@ SWA Free staging is not confidential hosting. Only content already approved for
 public disclosure may be staged. Noindex is crawler guidance, not access
 control.
 
-Keep production canonical URLs, approved production media URLs and approved
-contact configuration in the candidate's site bytes. Do not broaden contact
-success return URLs to preview hosts.
+Keep production canonical URLs and approved production media URLs in the
+candidate's site bytes. There is no contact endpoint to configure or rehearse.
 
 The staging-only SWA configuration applies these response policies at the
 direct preview origin:
@@ -129,16 +138,16 @@ direct preview origin:
 - `X-Robots-Tag: noindex`;
 - `Content-Security-Policy: form-action 'none'`.
 
-The form policy technically blocks ordinary browser submissions, including
-without JavaScript. It cannot prevent deliberate direct POSTs to a public
-external provider. Contact delivery rehearsal requires a separately approved
-sandbox artifact and recipient; that artifact is not promotable.
+The form policy remains defense in depth against accidental browser submissions,
+including without JavaScript. It does not introduce a form, provider or contact
+rehearsal requirement, and it is not access control.
 
 Only `staticwebapp.config.json` differs between staging and production trees.
 Validate and digest the two configurations separately while proving the site
 content bytes are unchanged. Never edit the retained production archive in
 place, and never promote staging noindex or form blocking. Intrinsic noindex
-on contact-success pages must remain in production.
+on any retained noindex page must remain in production. The verifier checks
+every retained file and its intrinsic policy without requiring contact routes.
 
 ## Deployment sequence and rollback
 
@@ -182,8 +191,8 @@ accepted artifact without rebuilding.
 | `source_run` | `0` for prepare; the run ID carrying the desired `accepted-production` archive for rollback |
 | `expected_production_run` | Latest accepted production run ID, or `0` before first production |
 
-Use these public repository variables for the release build:
-`NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL` and `NEXT_PUBLIC_CONTACT_FORM_ENDPOINT`.
+Use the public repository variable `NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL` for the
+release build. No contact endpoint variable is supplied.
 Set `STAGING_SITE_ORIGIN` to the exact approved generated preview HTTPS origin
 in both the `staging` and `production` environments. Set
 `PRODUCTION_SITE_ORIGIN` to the exact generated Azure production HTTPS origin
@@ -285,21 +294,21 @@ WordPress operational until staging acceptance and cutover approval. Inventory
 existing DNS, mail, verification and DNSSEC records; document domain/TLS setup
 and a recovery path before changing traffic.
 
-Production remains blocked until approved media verification, contact delivery
-and privacy, all legacy URL tests, representative English/French/Russian
+Production remains blocked until approved media verification, an accurate privacy
+notice for the actual hosting/media data flows, all legacy URL tests, representative English/French/Russian
 navigation/search/media/print/metadata checks and rollback acceptance succeed.
 See [release-operations.md](release-operations.md) and
 [repository-operations.md](repository-operations.md). No credential-free CI
-run proves external settings or successful delivery.
+run proves external settings or successful live publication.
 
 ## Full Content Security Policy
 
 The staging `form-action 'none'` policy is a narrow submission guard, not a
 claim of full CSP protection. A production CSP remains a separate reviewed
-change: inventory the exact media/contact origins and inline Next/JSON-LD
+change: inventory the exact media origins and inline Next/JSON-LD
 blocks, generate static-compatible hashes, exercise a report-only policy, then
 enforce it after resolving expected violations.
 
 Do not use broad `https:`, `unsafe-inline`, or a nonce the static host cannot
 issue per response as substitutes for that work. Preserve same-origin search
-fetches, the approved media origin and approved form actions.
+fetches and the approved media origin. Contact remains outside launch scope.

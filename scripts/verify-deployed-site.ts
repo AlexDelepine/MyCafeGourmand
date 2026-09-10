@@ -156,11 +156,6 @@ async function verifySite(
       throw new Error("Legacy destination is missing from artifact acceptance coverage.");
     }
   }
-  for (const target of ["/contact/success/", "/fr/contact/success/", "/ru/contact/success/"]) {
-    if (!checks.some((check) => check.target === target && check.intrinsicNoindex)) {
-      throw new Error("Artifact must retain all three intrinsic noindex success pages.");
-    }
-  }
   let next = 0;
   const failures: string[] = [];
   const deadline = Date.now() + 10 * 60_000;

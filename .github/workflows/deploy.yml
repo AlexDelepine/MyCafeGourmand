@@ -67,7 +67,6 @@ jobs:
         env:
           NEXT_PUBLIC_SITE_URL: https://mycafegourmand.com
           NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL: ${{ vars.NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL }}
-          NEXT_PUBLIC_CONTACT_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_CONTACT_FORM_ENDPOINT }}
         run: npm run build:release
       - run: npx --no-install tsx scripts/release-artifact.ts validate . production "$GITHUB_SHA"
       - name: Retain original production output and separate metadata
