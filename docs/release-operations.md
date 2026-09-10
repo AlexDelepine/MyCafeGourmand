@@ -1,12 +1,12 @@
 # Release operations
 
-This document defines artifact, contact, redirect, and media verification
+This document defines artifact, historical URL, and media verification
 boundaries for the existing Azure Static Web Apps static-export architecture.
-Azure resources and the external contact provider are not yet provisioned.
+Azure resources are not yet provisioned. Contact messaging is deferred entirely.
 The owner-approved hosting design uses Azure Static Web Apps Free and generated
 HTTP 200 legacy HTML navigation pages, not an edge provider or historical
 HTTP 301 responses. Production remains blocked until the required content,
-media/contact, hosting and live acceptance gates pass. The authoritative
+media, hosting and live acceptance gates pass. The authoritative
 deployment sequence and artifact separation are in [`deployment.md`](deployment.md).
 
 ## Artifact classes
@@ -19,9 +19,8 @@ indexes, and generated Static Web Apps configuration, but they leave canonical
 Blob media keys root-relative. They are useful for validation and preview and
 must not be deployed.
 
-Both commands reject `NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL`. When
-`NEXT_PUBLIC_CONTACT_FORM_ENDPOINT` is absent or invalid, they render an
-explicit localized unavailable-contact boundary instead of a form.
+Both commands reject `NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL`. Contact routes render
+localized no-service notices in every artifact; no endpoint can enable a form.
 
 Preview a completed local artifact with:
 
@@ -39,7 +38,6 @@ The only production artifact command is:
 
 ```sh
 export NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL="https://<approved-media-host>/<container>"
-export NEXT_PUBLIC_CONTACT_FORM_ENDPOINT="https://<approved-contact-host>/<public-submit-path>"
 npm run build:release
 ```
 
@@ -60,49 +58,33 @@ HTML, CSS, JavaScript, React Flight/RSC text, and JSON-LD. It rejects:
 - managed-media URLs that do not resolve exactly from the configured HTTPS base.
 
 The same command checks static route/file coverage and output size limits.
-Contact endpoint configuration is validated before the build, not by this
-media output scan. Neither validator proves provider approval, successful
-contact delivery, or correct live deployment.
+These validators do not prove media-provider approval or correct live deployment.
 
 Never deploy the output of `build`, `build:static`, `build:local`, or
 `build:ci`.
 
-## Contact form adapter contract
+## Contact deferred
 
-The static localized contact pages submit
-`application/x-www-form-urlencoded` directly to
-`NEXT_PUBLIC_CONTACT_FORM_ENDPOINT`. The endpoint is public build
-configuration, not a secret. It must not contain a recipient address,
-credential, token, URL credential, fragment, private/loopback host, or the
-site's own host or subdomain.
+The owner deferred contact messaging for launch. There is no submission form,
+contact provider, backend or email-link replacement. Builds do not require or
+use `NEXT_PUBLIC_CONTACT_FORM_ENDPOINT`; remove obsolete values from operator
+configuration. No contact account, delivery test or subscription is a launch gate.
 
-The parser checks HTTPS syntax, URL credentials/fragments, same-site targets,
-and lexical host restrictions. It does not resolve DNS, recognize every secret
-embedded in a path/query, or establish provider approval. The pre-build contact
-check logs the endpoint, so the operator must verify it is safe public
-configuration before setting it.
+The historical canonical pages `/contact/`, `/fr/contact-2/` and `/ru/kontact/`
+remain available with localized no-service notices and recipe navigation.
+Their frozen editorial records, translation relationships and URLs are unchanged;
+presentation suppresses obsolete source invitations to send messages or comments.
+Primary and mobile navigation no longer promote contact.
 
-The external adapter must accept only:
+The previously generated `/contact/success/`, `/fr/contact/success/` and
+`/ru/contact/success/` paths remain reserved compatibility pages, with the same
+no-service notices rather than message-received claims. They retain canonical
+URLs and noindex metadata and stay excluded from the sitemap.
 
-| Field | Contract |
-| --- | --- |
-| `name` | Required text, at most 120 characters |
-| `email` | Required email text, at most 254 characters |
-| `subject` | Optional text, at most 200 characters |
-| `message` | Required text, at most 5,000 characters |
-| `locale` | Exactly `en`, `fr`, or `ru` |
-| `returnUrl` | One app-generated absolute canonical success URL |
-| `website` | Honeypot; a nonempty value may be rejected and is not contact data |
-
-The adapter must independently enforce bounds and allow-list the exact absolute
-return URLs at the site's canonical origin with paths `/contact/success/`,
-`/fr/contact/success/`, and `/ru/contact/success/`. A matching path at another
-origin is not allowed. It may redirect only after accepting the submission.
-The confirmation pages are canonical noindex routes excluded from the sitemap.
-
-Launch remains blocked until the owner approves an accurate privacy notice for
-the selected provider and its real data flow, retention, deletion, and contact
-practices. Do not restore the obsolete WordPress privacy text.
+Privacy approval must still reflect actual hosting, media and any other approved
+services and their real data flows. Contact deferral is not a claim that no data
+is processed and does not approve a privacy notice. Do not restore the obsolete
+WordPress privacy text. Reintroducing contact requires a separate owner decision.
 
 ## Historical URL navigation
 
@@ -199,8 +181,8 @@ Before a production artifact can be considered deployable:
 2. Both media upload plans match their authenticated source and public
    manifests.
 3. Combined remote media verification succeeds.
-4. The owner approves the real media origin, contact endpoint, and privacy
-   notice.
+4. The owner approves the real media origin and accurate privacy information
+   for the actual services.
 5. Every historical mapping has a validated generated HTML navigation page;
    `npm run build:release` succeeds with those exact public values.
 6. The production `out/` passes the release output validator. Its staged variant
@@ -208,8 +190,9 @@ Before a production artifact can be considered deployable:
    technically blocked ordinary form submissions. Promote the retained
    production artifact without rebuilding or copying staging-only response
    restrictions. Never copy `.deployment/` into the public upload tree.
-7. Inspect the rendered contact form actions in all locales and test acceptance,
-   rejection, delivery, and return redirects against the approved provider.
+7. Inspect historical contact and former success URLs in all locales: no
+   submission controls, email-link replacement, obsolete invitations or receipt
+   claims; compatibility noindex boundaries remain intact.
 
 No repository document or credential-free CI run proves that external Azure,
-DNS, TLS, CORS, contact, or GitHub settings are configured.
+DNS, TLS, CORS or GitHub settings are configured.
