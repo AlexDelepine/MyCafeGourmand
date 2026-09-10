@@ -80,7 +80,7 @@ Production release is blocked until checked-in generation and output validation
 prove complete static legacy-page coverage. See
 [`docs/deployment.md`](docs/deployment.md) for the artifact contract and
 remaining launch gates, and
-[`docs/release-operations.md`](docs/release-operations.md) for media and contact
+[`docs/release-operations.md`](docs/release-operations.md) for media
 requirements.
 
 ## Validation
@@ -164,11 +164,13 @@ DNS change.
 | Contribution and pull request workflow | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Recipe authoring and catalog maintenance | [`content/README.md`](content/README.md) |
 | Authenticated WordPress operations | [`docs/migration-operations.md`](docs/migration-operations.md) |
-| Release builds, contact, legacy URLs, and media verification | [`docs/release-operations.md`](docs/release-operations.md) |
+| Release builds, legacy URLs, and media verification | [`docs/release-operations.md`](docs/release-operations.md) |
 | Deployment artifacts, legacy navigation pages, and launch gates | [`docs/deployment.md`](docs/deployment.md) |
 | CI, security automation, and GitHub launch gates | [`docs/repository-operations.md`](docs/repository-operations.md) |
 
 The browser editor remains deferred until a disposable private-repository test
 proves lossless round-tripping for nested records, optional values, and explicit
-`null`. Azure resources and the external contact provider are not provisioned
-by this repository.
+`null`. Contact functionality is intentionally deferred; the site does not
+offer a form, backend, provider integration, or email-link substitute. Historical
+contact routes may remain only to explain in each locale that the service is
+unavailable; they must not imply that messages can be sent.

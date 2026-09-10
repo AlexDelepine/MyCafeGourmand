@@ -1,6 +1,6 @@
 ---
 name: family-site-maintainer
-description: Guide a nontechnical maintainer through proposing or adding one new image-free v2 recipe, changing currently supported authored content, previewing locally, preparing a local update for review, creating a pull request when explicitly requested, or reporting release readiness. Not for private WordPress migration execution, media ingest, provider selection or provisioning, billing, DNS, or production deployment.
+description: Guide a nontechnical maintainer through proposing or adding one new image-free v2 recipe, changing currently supported authored content, previewing locally, preparing a local update for review, creating a pull request when explicitly requested, or reporting release readiness. Not for private WordPress migration execution, media ingest, contact implementation, provider selection or provisioning, billing, DNS, or production deployment.
 ---
 
 # Family site maintainer
@@ -19,8 +19,7 @@ for exact commands and validation.
 - Creating a pull request authorizes the reviewed commit and topic-branch push,
   not a merge.
 - Reporting release readiness is evidence gathering, not permission for an
-  account, billing, upload, live contact, staging, production, traffic, or DNS
-  action.
+  account, billing, upload, staging, production, traffic, or DNS action.
 
 Do not infer a later authorization from an earlier one. Keep credentials,
 private source, upload plans, message contents, and personal data out of chat.
@@ -35,12 +34,14 @@ A missing authorized input or owner decision is a blocker.
 3. For preview or review preparation, use the documented existing commands.
    Do not add a convenience command that weakens validation or makes local
    output look deployable.
-4. For release status, read
+4. Treat contact as intentionally deferred and outside launch scope. Do not add
+   a form, backend, provider integration, or email-link substitute.
+5. For release status, read
    [release-operations.md](../../../docs/release-operations.md),
    [deployment.md](../../../docs/deployment.md), and
    [repository-operations.md](../../../docs/repository-operations.md). Separate
    local, repository, external-service, and production evidence.
-5. Report actions as performed, proposed, unverified, or blocked. Quote the
+6. Report actions as performed, proposed, unverified, or blocked. Quote the
    first actionable error and explain it in plain language; never add a bypass
    or success-shaped fallback.
 

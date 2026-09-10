@@ -8,9 +8,13 @@ invariants here and task-specific procedures in the linked documents.
 Replace the family's WordPress site at `mycafegourmand.com` with a maintainable,
 low-cost static recipe site. Preserve approved English, French, and Russian
 recipes, editorial pages, galleries, translations, search, categories, serving
-scaling, print views, contact functionality, SEO, and historical URL compatibility.
-Comments, ratings, newsletters, ads, analytics, and social integrations are
-outside launch scope unless explicitly requested.
+scaling, print views, SEO, and historical URL compatibility. Contact
+functionality is deferred: do not add a form provider, backend, or email-link
+substitute. Preserve frozen source contact records; historical contact routes
+may show a localized no-service notice, but must not advertise contact
+availability or claim submission success. Comments, ratings, newsletters, ads,
+analytics, and social integrations are also outside launch scope unless
+explicitly requested.
 
 - Use Next.js App Router, React, and strict TypeScript with static export for
   Azure Static Web Apps. No API routes, Server Actions, request-time rendering,
@@ -31,7 +35,7 @@ outside launch scope unless explicitly requested.
 | Setup, contribution, validation, and pull requests | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Recipe authoring, schema, or catalog maintenance | [content/README.md](content/README.md) |
 | WordPress import, promotion, media plans, or source interpretation | [docs/migration-operations.md](docs/migration-operations.md) |
-| Release artifacts, contact, or remote media verification | [docs/release-operations.md](docs/release-operations.md) |
+| Release artifacts or remote media verification | [docs/release-operations.md](docs/release-operations.md) |
 | Deployment, legacy URL navigation pages, or launch gates | [docs/deployment.md](docs/deployment.md) |
 | GitHub Actions, Copilot customization, or repository settings | [docs/repository-operations.md](docs/repository-operations.md) |
 
@@ -44,7 +48,7 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
 - Distinguish inspection or dry run, local file writes, commits, pushes or pull
   requests, external-service actions, and production actions. Authorization for
   one boundary does not authorize the next.
-- Accounts or billing, public uploads, live contact submissions, staging
+- Accounts or billing, public uploads, any future live contact test, staging
   deployments, production traffic or DNS, and private-artifact cleanup each
   require explicit owner approval of the exact scope. Never treat available
   credentials or work credit as approval.

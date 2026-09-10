@@ -22,7 +22,7 @@ These requests have deliberately different boundaries:
 | "Report release readiness." | Report repository checks and known gates as verified, unverified, or blocked. It does not authorize a provider or production action. |
 
 Permission at one row never implies permission for a later row. Accounts or
-billing, an external upload, a live contact submission, a staging deployment,
+billing, an external upload, any future live contact test, a staging deployment,
 production traffic or DNS, and private-artifact cleanup each require separate
 owner approval of the exact action and target. Work credit or an available
 credential is not approval.
@@ -36,6 +36,14 @@ If a command fails, the agent should quote the first actionable error, explain
 what it means in plain language, and identify the file or owner decision needed
 next. It must not weaken a check, invent a value, overwrite a record, or turn a
 blocked release into a success-shaped status.
+
+Contact functionality is intentionally deferred. Do not choose a provider,
+build a form or backend, or add an email link as a substitute. The absence of a
+contact feature is not a release blocker. Preserve frozen source records;
+historical contact routes may show only a localized no-service notice, not
+promotional navigation or a submission-success claim. If the owner revisits
+contact later, its real data flow and privacy obligations require a separately
+approved design.
 
 ## Add one recipe
 
@@ -131,7 +139,7 @@ A useful status separates evidence into four groups:
 | --- | --- |
 | Local | The exact commit checked and the actual result of `npm run check` and `npm run build:ci`. These produce no deployable release. |
 | Repository | Pull-request checks plus a live administrator verification of branch protection, required checks, and security settings. Instructions or CI files do not prove those settings are enabled. |
-| External services | Owner-approved provider decisions and verified staging evidence for media, contact, static legacy navigation pages, hosting, TLS, rollback, and artifact identity. Missing evidence is blocked or unverified. |
+| External services | Owner-approved provider decisions and verified staging evidence for media, static legacy navigation pages, hosting, TLS, rollback, and artifact identity. Missing evidence is blocked or unverified. Contact is deferred and is not a launch gate. |
 | Production | Explicit approval and observed results for the exact production deployment, traffic, and DNS actions. Staging success is not production success. |
 
 Production release is currently blocked. `npm run build:release` intentionally
@@ -141,9 +149,9 @@ refresh, canonical URL, and visible fallback link that works without
 JavaScript. These pages preserve navigation but are not HTTP 301 redirects. Do
 not pass invented environment values or add a bypass to make the command green.
 
-Use [`release-operations.md`](release-operations.md) for release artifacts,
-media, and contact boundaries; [`deployment.md`](deployment.md) for hosting,
-legacy navigation pages, staging, rollback, and production gates; and
+Use [`release-operations.md`](release-operations.md) for release artifacts and
+media boundaries; [`deployment.md`](deployment.md) for hosting, legacy
+navigation pages, staging, rollback, and production gates; and
 [`repository-operations.md`](repository-operations.md) for the one-time GitHub
 administrator checklist. A status report must never infer provider readiness
 from a plan or repository readiness from documentation alone.
