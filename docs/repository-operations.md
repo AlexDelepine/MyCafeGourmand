@@ -97,6 +97,9 @@ protection. Neither `staging` nor `production` credentials are reused.
 See [the family-test operator guide](azure-family-test.md) for administrator
 setup, secret binding and manual invitations. The workflow has no PR-triggered
 credential path, production promotion, DNS operation or automatic teardown.
+For the temporary owner-owned fork, follow the
+[explicit repository targeting and return-upstream plan](azure-family-test.md#temporary-owner-owned-fork-and-return-upstream).
+Forking does not transfer administrator protections, reviewers or secrets.
 
 The files in this repository do **not** configure GitHub repository rules or
 security settings. A repository administrator must configure and verify the

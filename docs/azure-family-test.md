@@ -74,10 +74,87 @@ to assume the subscription or limit is unchanged.
    concurrent Homebrew/Azure installations. A skipped compiler test is not
    proof of compilation or Azure readiness.
 5. An administrator must establish GitHub's `family-test` environment and
-   protect `main` before any deployment secret or workflow execution. The
-   implementation-time read-only audit found the current token lacked
-   administrator permission and `family-test` did not exist. Treat these
-   gates as blocked until independently verified, not as settings code creates.
+   protect `main` before any deployment secret or deployment workflow execution.
+   Verify permissions and protection in the exact selected repository; upstream
+   access does not establish fork access or vice versa. Treat these gates as
+   blocked until independently verified, not as settings code creates.
+
+### Temporary owner-owned fork and return upstream
+
+The current test-setup repository is `AlexDelepine/MyCafeGourmand`, a public
+fork of `cndelepine/MyCafeGourmand`. Upstream
+[PR 19](https://github.com/cndelepine/MyCafeGourmand/pull/19) remains the original
+implementation/review track. Its commit
+`75ed72e9f1ec7a20a4882480456256fbd95c0aaa` descends directly from fork `main`
+at `0ae62f118f09b950c8ed6f84331fe6870da42148`; it was carried intact onto a
+fork topic branch, not rewritten or copied by blanket cherry-pick.
+The fork PR adds repository portability and operator setup corrections.
+Neither PR is authorization to merge, provision or deploy.
+
+The 2026-09-20 read-only fork inventory found administrator access for the
+owner, repository Actions enabled with read-only default workflow permissions
+and workflow PR approvals disabled, but no registered workflows, protected
+`main`, rulesets or environments. Only the owner was a collaborator. This is
+historical inspection, not proof of current settings or CI readiness.
+
+Before any separately approved setup, set the CLI target explicitly and verify
+it instead of relying on GitHub CLI's upstream preference for fork checkouts:
+
+```sh
+REPO=AlexDelepine/MyCafeGourmand
+gh api "repos/$REPO" \
+  --jq '{full_name,default_branch,permissions,parent:.parent.full_name}'
+```
+
+Use `--repo "$REPO"` on every workflow, variable and secret operation. Confirm
+the **base repository** is the fork when opening its PR. The workflow guard
+uses `GITHUB_REPOSITORY` from the running workflow, not a hard-coded owner or
+the fork's parent. No Azure subscription, repository connection or identity
+is embedded in Bicep.
+
+The exact proposed administrator settings are:
+
+| Scope | Required setting before deployment |
+| --- | --- |
+| Credential-free CI | Enable only `ci.yml` and `codeql.yml` if fork-disabled; inspect their actual PR/push/manual events first. They check/build/compile locally and perform no Azure login, provisioning, upload or deployment. Keep token default `read` and workflow PR approvals disabled. |
+| `main` | Require a PR, at least one independent approval, dismissal of stale reviews, approval of the most recent reviewable push, resolved conversations and an up-to-date branch. Enforce for administrators, with no force pushes or deletion. |
+| Required checks | Select the observed GitHub Actions checks for Linux validation, Windows launcher validation and CodeQL JavaScript/TypeScript analysis after the fork's first successful runs; do not guess check identifiers from the upstream repository. |
+| `family-test` | Required independent reviewer; `prevent_self_review: true`; disable administrator bypass in the GitHub environment UI; `deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }`; exactly one policy with `name: main`, `type: branch`. The workflow checks independent review and exact branch restrictions before and after approval. |
+| Environment variables | Later, after Azure inspection/approval: exact discovered `FAMILY_TEST_SITE_ORIGIN` and `NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL`, scoped to `family-test`. |
+| Environment secret | Later, with separate token-read/secret-write approval: only this test app's `AZURE_STATIC_WEB_APPS_API_TOKEN`, scoped to `family-test`. |
+
+**Reviewer prerequisite:** the owner must nominate an independent GitHub login
+other than the PR author/deployment initiator, authorize any collaborator
+invitation and have it accepted. Grant only the repository access needed for
+counted PR approval and environment review (write access for the required PR
+approval; environment review alone can use read access). Do not insert a guessed
+reviewer, use a second owner-controlled identity as independent review, allow
+self-review, or bypass protections because a reviewer is unavailable.
+An agent's code review does not replace GitHub's independent approval.
+
+GitHub's documented environment REST response does not expose the administrator
+bypass setting. An administrator must verify its disabled state in the UI and
+record that check separately; do not invent a REST request/response field or
+claim the workflow proves it. Likewise, the workflow confirms `main` is
+protected, not every individual branch-review/check setting listed above.
+
+Keep deployment manual and protected. Do not create `staging`/`production`
+environments or copy their credentials as part of family testing. Missing
+fork CI, reviewer access, branch protection or environment protection blocks
+deployment; it is not a reason to use upstream credentials.
+
+To return to upstream later, preserve both PR links and the original commit
+identity, fetch/reconcile the histories, and submit the fork follow-up commits
+for independent upstream review. Do not merge or close upstream PR 19 as a
+side effect of fork setup. After approved code integration, reconnect the
+working project to upstream and verify its remote/base repository before new
+PRs. Git synchronization transfers **code only**, not Actions settings,
+collaborators, environment reviewers, variables, secrets or Azure permissions.
+The upstream administrator must establish and verify its own protections;
+any test-app token rebinding/rotation or removal from the fork needs separate
+explicit approval. Do not enable two repositories to mutate the same test app
+concurrently. Retain the Azure test resources unless the owner explicitly
+authorizes their deletion.
 
 ### Least privilege
 

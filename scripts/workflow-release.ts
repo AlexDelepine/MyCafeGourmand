@@ -124,7 +124,16 @@ export function assertProtectedEnvironment(value: unknown) {
 
 export async function assertEnvironment(name: "staging" | "production" | "family-test") {
   z.object({ protected: z.literal(true) }).parse(await api("branches/main"));
-  const environment = assertProtectedEnvironment(await api(`environments/${name}`));
+  const value = await api(`environments/${name}`);
+  const environment = assertProtectedEnvironment(value);
+  if (name === "family-test") {
+    z.object({
+      deployment_branch_policy: z.object({
+        protected_branches: z.literal(false),
+        custom_branch_policies: z.literal(true)
+      })
+    }).parse(value);
+  }
   if (environment.deployment_branch_policy.custom_branch_policies) {
     const policies = z.object({
       total_count: z.literal(1),
