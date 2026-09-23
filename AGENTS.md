@@ -130,3 +130,6 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
   search assets, logs, or private migration artifacts.
 - Inspect the complete diff before committing. Keep changes cohesive, update
   the relevant documentation, and merge only after review and passing CI.
+- The owner-approved solo dev/test fork exception is defined in
+  `docs/azure-family-test.md`. It does not waive production/staging independent
+  approval, required CI, or operation-specific authorization.

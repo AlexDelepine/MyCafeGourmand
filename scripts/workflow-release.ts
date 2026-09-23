@@ -122,10 +122,22 @@ export function assertProtectedEnvironment(value: unknown) {
   return { ...environment, deployment_branch_policy: environment.deployment_branch_policy };
 }
 
+export function isSoloOwnerFamilyTest(repository: string | undefined) {
+  return repository === "AlexDelepine/MyCafeGourmand";
+}
+
 export async function assertEnvironment(name: "staging" | "production" | "family-test") {
   z.object({ protected: z.literal(true) }).parse(await api("branches/main"));
   const value = await api(`environments/${name}`);
-  const environment = assertProtectedEnvironment(value);
+  const environment = name === "family-test" && isSoloOwnerFamilyTest(process.env.GITHUB_REPOSITORY)
+    ? z.object({
+      protection_rules: z.array(z.unknown()),
+      deployment_branch_policy: z.object({
+        protected_branches: z.literal(false),
+        custom_branch_policies: z.literal(true)
+      })
+    }).parse(value)
+    : assertProtectedEnvironment(value);
   if (name === "family-test") {
     z.object({
       deployment_branch_policy: z.object({

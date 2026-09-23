@@ -107,40 +107,47 @@ gh api "repos/$REPO" \
 ```
 
 Use `--repo "$REPO"` on every workflow, variable and secret operation. Confirm
-the **base repository** is the fork when opening its PR. The workflow guard
-uses `GITHUB_REPOSITORY` from the running workflow, not a hard-coded owner or
-the fork's parent. No Azure subscription, repository connection or identity
-is embedded in Bicep.
+the **base repository** is the fork when opening its PR. The workflow guard's
+API requests use `GITHUB_REPOSITORY` from the running workflow, never the
+fork's parent. The solo policy below separately pins its authorized repository
+and owner. No Azure subscription, repository connection or identity is embedded
+in Bicep.
 
-The exact proposed administrator settings are:
+On 2026-09-22 the owner explicitly approved **solo-owner dev/test operation**
+for this fork only, superseding the proposed collaborator invitation and
+independent human review requirement here. Do not invite a collaborator for
+this setup. This is an explicit test policy, not evidence of independent
+approval. It does not apply to upstream, other forks, release staging or
+production. The running repository must be exactly
+`AlexDelepine/MyCafeGourmand`; both the dispatch actor and rerun actor must be
+`AlexDelepine`. A different repository retains the independent-review policy.
+
+The exact proposed administrator settings for this solo test fork are:
 
 | Scope | Required setting before deployment |
 | --- | --- |
 | Credential-free CI | Enable only `ci.yml` and `codeql.yml` if fork-disabled; inspect their actual PR/push/manual events first. They check/build/compile locally and perform no Azure login, provisioning, upload or deployment. Keep token default `read` and workflow PR approvals disabled. |
-| `main` | Require a PR, at least one independent approval, dismissal of stale reviews, approval of the most recent reviewable push, resolved conversations and an up-to-date branch. Enforce for administrators, with no force pushes or deletion. |
-| Required checks | Select the observed GitHub Actions checks for Linux validation, Windows launcher validation and CodeQL JavaScript/TypeScript analysis after the fork's first successful runs; do not guess check identifiers from the upstream repository. |
-| `family-test` | Required independent reviewer; `prevent_self_review: true`; disable administrator bypass in the GitHub environment UI; `deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }`; exactly one policy with `name: main`, `type: branch`. The workflow checks independent review and exact branch restrictions before and after approval. |
+| `main` | Require a PR, resolved conversations and an up-to-date branch. Require zero human approvals, no last-push approval and no stale-approval requirement. Enforce for administrators, with no force pushes or deletion. The owner still inspects the diff and passing checks before merging. |
+| Required checks | Require observed contexts `Validate on Linux`, `Validate Windows launcher` and `Analyze JavaScript and TypeScript`, each bound to GitHub Actions app ID `15368`, with strict/up-to-date checks. Successful CI is mandatory, not a human-review substitute. |
+| `family-test` | No required human reviewer or self-review restriction; `deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }`; exactly one policy with `name: main`, `type: branch`. The environment restricts branch and secret scope, not human approval. The workflow checks protected main and exact branch restrictions before the build/upload. |
 | Environment variables | Later, after Azure inspection/approval: exact discovered `FAMILY_TEST_SITE_ORIGIN` and `NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL`, scoped to `family-test`. |
 | Environment secret | Later, with separate token-read/secret-write approval: only this test app's `AZURE_STATIC_WEB_APPS_API_TOKEN`, scoped to `family-test`. |
 
-**Reviewer prerequisite:** the owner must nominate an independent GitHub login
-other than the PR author/deployment initiator, authorize any collaborator
-invitation and have it accepted. Grant only the repository access needed for
-counted PR approval and environment review (write access for the required PR
-approval; environment review alone can use read access). Do not insert a guessed
-reviewer, use a second owner-controlled identity as independent review, allow
-self-review, or bypass protections because a reviewer is unavailable.
-An agent's code review does not replace GitHub's independent approval.
-
-GitHub's documented environment REST response does not expose the administrator
-bypass setting. An administrator must verify its disabled state in the UI and
-record that check separately; do not invent a REST request/response field or
-claim the workflow proves it. Likewise, the workflow confirms `main` is
-protected, not every individual branch-review/check setting listed above.
+There is no pending second-person approval in this fork's family workflow.
+Manual dispatch is the owner's deliberate test operation; the environment
+does not create another approval boundary. Keep it serialized, use only the
+dedicated test app token and validate the NONPROMOTABLE artifact and actual
+destination. No production credential or promotion path is permitted.
+The workflow confirms `main` is protected, not every individual branch/check
+setting listed above; the administrator must verify those settings separately.
+GitHub's documented environment REST response does not expose administrator
+bypass. Do not invent a REST field or claim the workflow proves that UI setting.
+Other repositories' family environments and all staging/production environments
+still require independent review, prevent-self-review and reviewed bypass policy.
 
 Keep deployment manual and protected. Do not create `staging`/`production`
 environments or copy their credentials as part of family testing. Missing
-fork CI, reviewer access, branch protection or environment protection blocks
+fork CI, branch protection or environment protection blocks
 deployment; it is not a reason to use upstream credentials.
 
 To return to upstream later, preserve both PR links and the original commit
@@ -278,12 +285,15 @@ with the approved configuration and compare the workflow's returned hostname.
 
 ## Protect GitHub, then bind only the test app
 
-An independent administrator follows
+The administrator follows the repository-specific policy above and
 [repository-operations.md](repository-operations.md#administrator-owned-launch-gates):
 
-1. Protect `main` with PR review, stale-review dismissal, required CI/CodeQL,
-   resolved conversations and no force push/deletion.
+1. Protect `main` with a PR requirement, required CI/CodeQL, resolved
+   conversations and no force push/deletion. For the approved solo fork, omit
+   human-approval/last-push requirements; other repositories retain independent
+   review and stale-review dismissal.
 2. In **Repository Settings → Environments**, create **family-test**. Configure
+   no required human reviewer in the approved solo fork. Elsewhere configure
    a real independent required reviewer, **prevent self-review**, and disable
    administrator bypass. Require **selected branches/tags → branch `main`**
    only, not all protected branches or wildcard/tag patterns. Confirm the
@@ -331,7 +341,8 @@ Run workflow → branch main → operation bootstrap**, or:
 gh workflow run family-test.yml --repo "$REPO" --ref main -f operation=bootstrap
 ```
 
-The independent reviewer approves the `family-test` environment. Bootstrap
+The solo fork runs after the owner's dispatch without an environment review
+pause; other repositories require independent environment approval. Bootstrap
 contains only the multilingual content-free login/denied pages plus the harmless
 role-protected `/_family-test/probe.html`, not recipes or media. It deploys to
 the test app's primary slot, never a named preview. Compare the upload action's returned URL to the
@@ -551,7 +562,7 @@ not guarantee uptime. Keep the dev/test spending limit enabled permanently;
 do not silently convert to PAYG or add automatic shutdown to avoid a bill.
 
 Periodically review actual costs, quota use, public-media traffic, invitation
-membership, independent reviewers and deployment-token access. Owner approval
+membership, the applicable reviewer/solo-owner policy and deployment-token access. Owner approval
 is required before expanding the workload or changing billing.
 
 ## Replication and separately approved teardown

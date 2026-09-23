@@ -54,7 +54,10 @@ function packageScripts() {
 }
 
 function environment(overrides: Readonly<Record<string, string>>) {
-  return { ...process.env, ...overrides };
+  const clean = { ...process.env };
+  delete clean.FAMILY_TEST_SITE_ORIGIN;
+  delete clean.MY_CAFE_GOURMAND_FAMILY_TEST_BUILD;
+  return { ...clean, ...overrides };
 }
 
 test("only the guarded release command can produce a deployable static artifact", () => {
@@ -131,13 +134,12 @@ test("release build canonical origin overrides conflicting Next dotenv configura
       path.join(projectRoot, ".env.production.local"),
       "NEXT_PUBLIC_SITE_URL=https://preview.example.test\n"
     );
-    const environment: NodeJS.ProcessEnv = {
-      ...process.env,
+    const releaseEnvironment: NodeJS.ProcessEnv = environment({
       NODE_ENV: "production",
       npm_lifecycle_event: "build:release"
-    };
-    delete environment.NEXT_PUBLIC_SITE_URL;
-    delete environment.MY_CAFE_GOURMAND_RELEASE_BUILD;
+    });
+    delete releaseEnvironment.NEXT_PUBLIC_SITE_URL;
+    delete releaseEnvironment.MY_CAFE_GOURMAND_RELEASE_BUILD;
     const result = spawnSync(process.execPath, [
       "-e",
       "require('@next/env').loadEnvConfig(process.argv[1], false); " +
@@ -145,7 +147,7 @@ test("release build canonical origin overrides conflicting Next dotenv configura
       projectRoot
     ], {
       cwd: process.cwd(),
-      env: createReleaseBuildEnvironment(environment),
+      env: createReleaseBuildEnvironment(releaseEnvironment),
       encoding: "utf8",
       timeout: 30_000
     });

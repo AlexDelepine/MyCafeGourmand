@@ -37,7 +37,7 @@ jobs:
         run: npx --no-install tsx scripts/workflow-family-test.ts
 
   family-test:
-    name: Approve retained dev/test app update (not production)
+    name: Update retained dev/test app (not production)
     needs: authorize
     environment: family-test
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
           node-version-file: ".nvmrc"
           cache: npm
       - run: npm ci
-      - name: Recheck protections after approval
+      - name: Recheck repository test policy before building
         env:
           GH_TOKEN: ${{ github.token }}
         run: npx --no-install tsx scripts/workflow-family-test.ts
