@@ -10,6 +10,7 @@ provision Azure resources, deploy the site, or select an external service.
 | `.github/workflows/ci.yml` | Linux checks/static build and Windows launcher/build validation |
 | `.github/workflows/codeql.yml` | JavaScript and TypeScript security analysis |
 | `.github/workflows/copilot-setup-steps.yml` | Node and locked dependency setup for Copilot cloud agent |
+| `.github/workflows/family-test.yml` | Protected manual bootstrap/site uploads to the dedicated NONPROMOTABLE family dev/test app |
 | `.github/dependabot.yml` | Weekly npm and GitHub Actions update pull requests |
 | `scripts/check-forbidden-migration-inputs.mjs` | Reject tracked paths matching forbidden migration-input names, except the SQL fixture boundary |
 
@@ -20,6 +21,9 @@ Concurrency groups isolate pull request numbers and merge-group head SHAs so
 superseded runs cancel without crossing changes. Every job has a timeout, and
 workflows default to read-only repository permissions. CodeQL receives only the
 additional `security-events: write` permission needed to publish its analysis.
+Linux checks include the fixture family-test origin environment so release
+test fixtures cannot accidentally inherit the deployment profile. This does
+not configure a live Azure origin or provide credentials.
 
 All third-party workflow steps use immutable commit SHAs with a nearby release
 comment. Dependabot proposes action updates, but a reviewer must verify that a
@@ -90,6 +94,20 @@ Keep discovery/frontmatter/tool assumptions aligned with the official references
 
 ## Administrator-owned launch gates
 
+The invited-family testing workflow separately requires a real `family-test`
+environment with independent required review and main-only deployment
+protection, except for the explicitly owner-approved solo dev/test policy
+in `AlexDelepine/MyCafeGourmand`. That fork's family environment has no
+required human reviewer; it still requires protected main, an exact main-only
+branch policy, manual owner dispatch and serialized NONPROMOTABLE deployment.
+Neither `staging` nor `production` credentials or review policies are changed.
+See [the family-test operator guide](azure-family-test.md) for administrator
+setup, secret binding and manual invitations. The workflow has no PR-triggered
+credential path, production promotion, DNS operation or automatic teardown.
+For the temporary owner-owned fork, follow the
+[explicit repository targeting and return-upstream plan](azure-family-test.md#temporary-owner-owned-fork-and-return-upstream).
+Forking does not transfer administrator protections, reviewers or secrets.
+
 The files in this repository do **not** configure GitHub repository rules or
 security settings. A repository administrator must configure and verify the
 following before launch.
@@ -104,6 +122,12 @@ unresolved until an owner or administrator verifies the live setting.
 ### Protect `main`
 
 Create a branch ruleset (or equivalent branch protection) targeting `main`:
+
+For the temporary solo dev/test fork only, use the
+[family-test settings recipe](azure-family-test.md#temporary-owner-owned-fork-and-return-upstream):
+retain the PR requirement and mandatory CI, but omit required human approvals,
+stale-approval dismissal and last-push approval. The production/upstream
+requirements below remain unchanged.
 
 - require changes through a pull request;
 - require at least one approval and dismiss stale approvals after new commits;

@@ -37,6 +37,7 @@ explicitly requested.
 | WordPress import, promotion, media plans, or source interpretation | [docs/migration-operations.md](docs/migration-operations.md) |
 | Release artifacts or remote media verification | [docs/release-operations.md](docs/release-operations.md) |
 | Deployment, legacy URL navigation pages, or launch gates | [docs/deployment.md](docs/deployment.md) |
+| Invited-family Azure dev/test infrastructure and access | [docs/azure-family-test.md](docs/azure-family-test.md) |
 | GitHub Actions, Copilot customization, or repository settings | [docs/repository-operations.md](docs/repository-operations.md) |
 
 Read the relevant guide before changing its implementation or running its
@@ -129,3 +130,6 @@ rituals or enforcement mechanisms; critical checks belong in code and CI.
   search assets, logs, or private migration artifacts.
 - Inspect the complete diff before committing. Keep changes cohesive, update
   the relevant documentation, and merge only after review and passing CI.
+- The owner-approved solo dev/test fork exception is defined in
+  `docs/azure-family-test.md`. It does not waive production/staging independent
+  approval, required CI, or operation-specific authorization.
