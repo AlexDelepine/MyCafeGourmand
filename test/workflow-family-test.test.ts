@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import { assertEnvironment } from "../scripts/workflow-release";
 import { assertFamilyWorkflowContext } from "../scripts/workflow-family-test";
@@ -10,6 +12,68 @@ const protectedEnvironment = {
   deployment_branch_policy: { protected_branches: false, custom_branch_policies: true }
 };
 const mainPolicy = { total_count: 1, branch_policies: [{ name: "main", type: "branch" }] };
+
+function familyWorkflowSteps() {
+  const workflow = readFileSync(path.join(process.cwd(), ".github/workflows/family-test.yml"), "utf8");
+  const job = workflow.split("\n  family-test:\n")[1];
+  assert.ok(job);
+  return { workflow, steps: job.split(/^      - /mu).slice(1) };
+}
+
+test("family diagnostic retention is gated by fresh checks, build and commit/origin validation", () => {
+  const { workflow, steps } = familyWorkflowSteps();
+  const check = steps.findIndex((step) => step.startsWith("run: npm run check\n"));
+  const bootstrap = steps.findIndex((step) => step.includes("run: npm run family-test:bootstrap\n"));
+  const site = steps.findIndex((step) => step.includes("run: npm run build:family-test\n"));
+  const validation = steps.findIndex((step) => step.includes("id: validate\n"));
+  const upload = steps.findIndex((step) => step.includes("id: upload\n"));
+  const destination = steps.findIndex((step) => step.startsWith("name: Require the actual dedicated test origin\n"));
+  const verification = steps.findIndex((step) => step.includes("run: npm run family-test:verify -- . --anonymous-only\n"));
+  const retention = steps.findIndex((step) => step.includes("uses: actions/upload-artifact@"));
+  assert.ok(check >= 0 && check < bootstrap && bootstrap < site && site < validation
+    && validation < upload && upload < destination && destination < verification && verification < retention);
+  assert.match(steps[bootstrap], /if: inputs.operation == 'bootstrap'\n/u);
+  assert.match(steps[site], /if: inputs.operation == 'site'\n/u);
+  for (const index of [check, validation, upload, destination, verification]) {
+    assert.doesNotMatch(steps[index], /^\s*if:/mu, "These steps must retain GitHub's default success() gate.");
+  }
+  assert.match(steps[validation],
+    /run: npx --no-install tsx scripts\/family-test-artifact.ts validate \. "\$GITHUB_SHA" "\$FAMILY_TEST_SITE_ORIGIN"\n/u);
+  assert.doesNotMatch(workflow, /continue-on-error:|always\(\)|accepted-production|production-acceptance|staging-acceptance/u);
+  assert.match(steps[retention], /name: family-test-NONPROMOTABLE\n/u);
+  assert.match(steps[retention],
+    /path: \|\n\s+out\/\n\s+\.deployment\/family-test-artifact\.json\n\s+\.deployment\/redirect-manifest\.json\n/u);
+  assert.match(steps[retention], /include-hidden-files: true\n/u);
+  assert.match(steps[retention], /if-no-files-found: error\n/u);
+});
+
+test("family retention condition retains validated failures but skips unvalidated or cancelled runs", () => {
+  const { steps } = familyWorkflowSteps();
+  const retention = steps.find((step) => step.includes("uses: actions/upload-artifact@"));
+  assert.ok(retention);
+  const condition = retention.match(/^\s+if: (.+)$/mu)?.[1];
+  assert.equal(condition, "${{ !cancelled() && steps.validate.outcome == 'success' }}");
+  // Pin the exact status-function expression above; model its GitHub truth table below.
+  const scenarios = [
+    { name: "checks failed", checks: "failure", build: "skipped", validation: "skipped", later: "skipped", cancelled: false, retain: false },
+    { name: "bootstrap failed", checks: "success", build: "failure", validation: "skipped", later: "skipped", cancelled: false, retain: false },
+    { name: "site build failed", checks: "success", build: "failure", validation: "skipped", later: "skipped", cancelled: false, retain: false },
+    { name: "validation failed", checks: "success", build: "success", validation: "failure", later: "skipped", cancelled: false, retain: false },
+    { name: "validation skipped", checks: "success", build: "success", validation: "skipped", later: "skipped", cancelled: false, retain: false },
+    { name: "upload failed", checks: "success", build: "success", validation: "success", later: "failure", cancelled: false, retain: true },
+    { name: "origin mismatch", checks: "success", build: "success", validation: "success", later: "failure", cancelled: false, retain: true },
+    { name: "verifier failed", checks: "success", build: "success", validation: "success", later: "failure", cancelled: false, retain: true },
+    { name: "anonymous probes passed", checks: "success", build: "success", validation: "success", later: "success", cancelled: false, retain: true },
+    { name: "cancelled during validation", checks: "success", build: "success", validation: "cancelled", later: "skipped", cancelled: true, retain: false },
+    { name: "cancelled after validation", checks: "success", build: "success", validation: "success", later: "cancelled", cancelled: true, retain: false }
+  ];
+  for (const scenario of scenarios) {
+    if (scenario.checks !== "success" || scenario.build !== "success") {
+      assert.equal(scenario.validation, "skipped", scenario.name);
+    }
+    assert.equal(!scenario.cancelled && scenario.validation === "success", scenario.retain, scenario.name);
+  }
+});
 
 test("family authorization inspects only the running repository, including a fork", async (context) => {
   const previousRepository = process.env.GITHUB_REPOSITORY;

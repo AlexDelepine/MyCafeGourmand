@@ -152,7 +152,14 @@ export async function verifyFamilyTest(
   const publicPaths = new Set<string>(familyTestPublicPages);
   async function exact(check: Check, transport: SiteTransport) {
     let response = await transport(origin, check.target, check.bytes + 4_096);
-    if (check.slash && [301, 308].includes(response.status)) {
+    if (publicPaths.has(check.target) && response.status === 301) {
+      const alias = `${check.target.slice(0, -".html".length)}/`;
+      const location = response.headers.location;
+      if (location !== alias && location !== `${origin}${alias}`) {
+        throw new Error("Only the exact same-origin public entry alias is permitted.");
+      }
+      response = await transport(origin, alias, check.bytes + 4_096);
+    } else if (check.slash && [301, 308].includes(response.status)) {
       const location = response.headers.location;
       if (!location || new URL(location, origin).href !== `${origin}${check.target}/`) {
         throw new Error("Only exact same-origin legacy slash normalization is permitted.");
@@ -161,7 +168,7 @@ export async function verifyFamilyTest(
     }
     if (response.status !== 200 || response.body.length !== check.bytes || sha256(response.body) !== check.digest
       || (check.types && !check.types.includes(response.headers["content-type"]?.split(";")[0].trim().toLowerCase() ?? ""))) {
-      throw new Error("Family content must return exact retained bytes and MIME directly.");
+      throw new Error("Family content must return exact retained bytes and MIME after at most one approved normalization.");
     }
     assertPolicy(response, baseline);
   }
@@ -190,7 +197,12 @@ export async function verifyFamilyTest(
       }
     }
   }));
-  for (const target of ["/__family_missing__", "/_next/__missing__", "/_search/__missing__.json"]) {
+  const denialTargets = [
+    "/__family_missing__", "/_next/__missing__", "/_search/__missing__.json",
+    ...familyTestPublicPages.map((target) => `${target.slice(0, -".html".length)}/index.html`),
+    ...(metadata.purpose === "bootstrap" ? ["/fr/", "/ru/", "/_family-test/probe/"] : [])
+  ];
+  for (const target of denialTargets) {
     denied(await transports.anonymous(origin, target, 16_384), false);
     if (!anonymousOnly) denied(await transports.nonmember!(origin, target, 16_384), true);
   }
