@@ -67,6 +67,7 @@ jobs:
           NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL: ${{ vars.NEXT_PUBLIC_RECIPE_MEDIA_BASE_URL }}
         run: npm run build:family-test
       - name: Bind the artifact to this commit and approved test origin
+        id: validate
         run: npx --no-install tsx scripts/family-test-artifact.ts validate . "$GITHUB_SHA" "$FAMILY_TEST_SITE_ORIGIN"
       - name: Upload only to the dedicated test app primary slot
         id: upload
@@ -86,7 +87,8 @@ jobs:
           node -e 'const a=process.env.ACTUAL_ORIGIN,e=process.env.FAMILY_TEST_SITE_ORIGIN;if(a!==e&&a!==e+"/")throw Error("Unexpected dedicated test origin");'
       - name: Verify anonymous denial (not full authenticated acceptance)
         run: npm run family-test:verify -- . --anonymous-only
-      - name: Retain nonpromotable bytes for operator-local authenticated verification
+      - name: Retain validated NONPROMOTABLE bytes for diagnostics (not acceptance)
+        if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: family-test-NONPROMOTABLE

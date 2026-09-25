@@ -16,8 +16,9 @@ promotion. Future teardown needs a new, explicit, resource-specific approval.
 
 - All site content and site-hosted assets require the custom role `family`.
   Only the standalone multilingual `/_family-test/login.html` and
-  `/_family-test/denied.html` pages, plus Azure's `/.auth/*` endpoints, are
-  anonymous. Ordinary provider sign-in grants `authenticated`, **not**
+  `/_family-test/denied.html` pages (including their Azure-normalized
+  `/_family-test/login/` and `/_family-test/denied/` aliases), plus Azure's
+  `/.auth/*` endpoints, are anonymous. Ordinary provider sign-in grants `authenticated`, **not**
   `family`. No role-assignment function, SAS, backend or custom identity-provider
   registration is used.
 - **Blob media is public**, including to anonymous nonbrowser clients with an
@@ -494,6 +495,19 @@ commit and origin. Use this artifact, not a later local rebuild, for live
 byte-level acceptance. Retained GitHub artifacts currently expire after 14 days;
 this is artifact retention, **not Azure resource expiry**.
 
+Retention runs only after the fresh build/checks and the explicit commit/origin
+artifact-validation step succeed. It also runs if the later upload,
+destination check or anonymous verifier fails, provided the job is not
+cancelled. Failed/skipped validation or an earlier build/check failure never
+authorizes retention of leftover `out/`. Cancellation skips retention; an
+interrupted upload does not guarantee an archive exists. The archive includes
+the exact `out/`, `.deployment/family-test-artifact.json` and
+`.deployment/redirect-manifest.json`, without private sessions or live evidence.
+Its existence proves neither successful deployment nor acceptance: inspect the
+run's failed steps, and keep the artifact **NONPROMOTABLE** for diagnosis.
+Retention does not suppress deployment/verifier failure or issue an acceptance
+receipt. A failed run still blocks sharing/full acceptance.
+
 ### Private local sessions and evidence
 
 Use distinct real browser profiles: an invited `family` member and an
@@ -520,8 +534,21 @@ The verifier checks actual roles via `/.auth/me`, exact retained bytes,
 anonymous and nonmember denial, site assets, canonical/index aliases, every
 legacy source and encoded spelling, response MIME, noindex and cache policy.
 It never forwards a cookie to another origin. A 200 login page or redirect is
-not successful content acceptance. Without a real authenticated nonmember,
-the negative gate is **blocked**, not simulated.
+not successful protected-content acceptance. The two public entry `.html`
+paths may return direct HTTP 200 or exactly one HTTP 301 to their respective
+same-origin clean trailing-slash aliases (`/_family-test/login/` and
+`/_family-test/denied/`). Only the exact root-relative or absolute alias is
+accepted: no foreign origin, different path, query, fragment, alternate status
+or further redirect. The final HTTP 200 must match the retained page's bytes,
+HTML MIME and every reviewed global header, including noindex, private/no-store
+and CSP. Azure's normalized public aliases require no additional anonymous
+route exemptions; their `/index.html` variants remain protected. Bootstrap
+root/index, probe and locale paths remain protected as well.
+The platform `/.auth/me` check establishes actual roles; site-global headers
+are required on the checked site content, not this Azure-owned auth response.
+Production verification and release normalization policy are unchanged.
+Without a real authenticated nonmember, the negative gate is **blocked**,
+not simulated.
 
 Before sharing the family link, manually verify:
 
