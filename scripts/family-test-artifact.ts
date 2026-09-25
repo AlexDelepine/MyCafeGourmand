@@ -131,6 +131,7 @@ export function writeFamilyTestArtifact(
   }
   if (purpose === "bootstrap") {
     writeNewDeploymentFile(path.join(output, familyTestProbePath), probe);
+    writeNewDeploymentFile(path.join(output, "index.html"), probe);
   }
   for (const redirect of manifest.redirects) {
     writeFileSync(path.join(output, getLegacyPageOutputPath(redirect.source)), renderLegacyPage(redirect, "family-test"));
@@ -187,9 +188,17 @@ export function validateFamilyTestArtifact(root: string, expectedCommit?: string
     const expected = `${decodeLocalPath(destination).slice(1)}index.html`;
     if (!metadata.files.some((file) => file.path === expected)) throw new Error("Missing legacy destination.");
   }
-  if (metadata.purpose === "bootstrap" && (manifest.redirects.length !== 0 || metadata.files.length !== 4
-    || readBoundedFile(output, familyTestProbePath.slice(1)).toString() !== probe)) {
-    throw new Error("Bootstrap contains unexpected content.");
+  if (metadata.purpose === "bootstrap") {
+    const expectedFiles = [
+      configPath, "index.html", ...familyTestPublicPages.map((route) => route.slice(1)),
+      familyTestProbePath.slice(1)
+    ];
+    if (manifest.redirects.length !== 0 || metadata.files.length !== expectedFiles.length
+      || metadata.files.some((file) => !expectedFiles.includes(file.path))
+      || readBoundedFile(output, "index.html").toString() !== probe
+      || readBoundedFile(output, familyTestProbePath.slice(1)).toString() !== probe) {
+      throw new Error("Bootstrap contains unexpected content.");
+    }
   }
   return { metadata, manifest, artifactDigest: sha256(bytes) };
 }
