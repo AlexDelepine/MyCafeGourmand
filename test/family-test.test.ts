@@ -12,7 +12,7 @@ import {
 } from "../scripts/family-test-artifact";
 import { createFamilyTestBuildEnvironment, createReleaseBuildEnvironment } from "../scripts/build-static";
 import { renderLegacyPage } from "../scripts/legacy-navigation";
-import { prepareStagingArtifact, validateReleaseArtifact, writeReleaseArtifactMetadata } from "../scripts/release-artifact";
+import { inventoryOutput, prepareStagingArtifact, validateReleaseArtifact, writeReleaseArtifactMetadata } from "../scripts/release-artifact";
 import { validateAcceptanceReceipt, wirePath, type SiteResponse, type SiteTransport } from "../scripts/verify-deployed-site";
 import { familySessionTransport, readFamilyCookie, verifyFamilyTest } from "../scripts/verify-family-test";
 import { buildFamilyBootstrap } from "../scripts/build-family-test";
@@ -25,6 +25,14 @@ function fixture() {
   const result = releaseFixture(false);
   writeFamilyTestArtifact(result.root, origin, media);
   return result;
+}
+
+function bootstrapRoot() {
+  const root = mkdtempSync(path.join(process.cwd(), ".family-bootstrap-test-"));
+  mkdirSync(path.join(root, "config"));
+  writeFileSync(path.join(root, "config/staticwebapp.config.json"),
+    JSON.stringify({ trailingSlash: "always", globalHeaders: {} }));
+  return root;
 }
 
 function fakeTransport(
@@ -246,19 +254,107 @@ test("private session files bind origin, reject permissions and never allow off-
 });
 
 test("bootstrap is content-free, freshly generated and nonpromotable", () => {
-  const root = mkdtempSync(path.join(process.cwd(), ".family-bootstrap-test-"));
+  const root = bootstrapRoot();
   try {
-    mkdirSync(path.join(root, "config"));
-    writeFileSync(path.join(root, "config/staticwebapp.config.json"),
-      JSON.stringify({ trailingSlash: "always", globalHeaders: {} }));
     const result = buildFamilyBootstrap(root, origin);
     assert.equal(result.metadata.purpose, "bootstrap");
     assert.equal(result.metadata.mediaBase, null);
-    assert.equal(result.metadata.files.length, 4);
+    assert.equal(result.metadata.files.length, 5);
+    assert.deepEqual(result.metadata.files.map((file) => file.path).sort(), [
+      "_family-test/denied.html", "_family-test/login.html", "_family-test/probe.html",
+      "index.html", "staticwebapp.config.json"
+    ]);
+    const rootPage = readFileSync(path.join(root, "out/index.html"), "utf8");
+    assert.equal(rootPage, "<!doctype html><html lang=\"en\"><head><meta name=\"robots\" content=\"noindex\"><title>Family access probe</title></head><body>Invited family access is active. NONPROMOTABLE test.</body></html>\n");
+    assert.equal(rootPage, readFileSync(path.join(root, "out/_family-test/probe.html"), "utf8"));
+    const config = z.object({
+      routes: z.array(z.object({ route: z.string(), allowedRoles: z.array(z.string()) })),
+      globalHeaders: z.record(z.string(), z.string())
+    }).parse(JSON.parse(readFileSync(path.join(root, "out/staticwebapp.config.json"), "utf8")));
+    for (const target of ["/", "/index.html"]) {
+      const firstMatch = config.routes.find(({ route }) => route === target
+        || (route.endsWith("*") && target.startsWith(route.slice(0, -1))));
+      assert.deepEqual(firstMatch, { route: "/*", allowedRoles: ["family"] });
+    }
+    assert.equal(config.globalHeaders["X-Robots-Tag"], "noindex");
+    assert.equal(config.globalHeaders["Cache-Control"], "private, no-store");
+    assert.equal(config.globalHeaders["Content-Security-Policy"], "form-action 'none'");
     assert.equal(result.manifest.redirects.length, 0);
     assert.throws(() => buildFamilyBootstrap(root, origin), /fresh checkout/u);
     assert.throws(() => validateReleaseArtifact(root, "production"), /NONPROMOTABLE/u);
     assert.match(readFileSync(path.join(root, "out/_family-test/login.html"), "utf8"), /probe.html/u);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("bootstrap rejects a missing root entrypoint even with a matching inventory", () => {
+  const root = bootstrapRoot();
+  try {
+    const { metadata } = buildFamilyBootstrap(root, origin);
+    rmSync(path.join(root, "out/index.html"), { force: true });
+    writeFileSync(path.join(root, familyMetadataPath), JSON.stringify({
+      ...metadata, files: inventoryOutput(path.join(root, "out"))
+    }));
+    assert.throws(() => validateFamilyTestArtifact(root), /Bootstrap/u);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("bootstrap rejects tampered root bytes and replacement paths even with matching inventories", () => {
+  for (const replacement of ["index.html", "Index.html", "unexpected.html"]) {
+    const root = bootstrapRoot();
+    try {
+      const { metadata } = buildFamilyBootstrap(root, origin);
+      const rootPage = readFileSync(path.join(root, "out/index.html"));
+      rmSync(path.join(root, "out/index.html"));
+      writeFileSync(path.join(root, "out", replacement),
+        replacement === "index.html" ? "<!doctype html><p>Unexpected content</p>" : rootPage);
+      assert.throws(() => validateFamilyTestArtifact(root), /inventory/u);
+      writeFileSync(path.join(root, familyMetadataPath), JSON.stringify({
+        ...metadata, files: inventoryOutput(path.join(root, "out"))
+      }));
+      assert.throws(() => validateFamilyTestArtifact(root), /Bootstrap/u);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }
+});
+
+test("bootstrap rejects anonymous root exceptions even with a matching inventory", () => {
+  for (const route of ["/", "/index.html"]) {
+    const root = bootstrapRoot();
+    try {
+      const { metadata } = buildFamilyBootstrap(root, origin);
+      const configPath = path.join(root, "out/staticwebapp.config.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.routes.unshift({ route, allowedRoles: ["anonymous"] });
+      writeFileSync(configPath, JSON.stringify(config));
+      writeFileSync(path.join(root, familyMetadataPath), JSON.stringify({
+        ...metadata, files: inventoryOutput(path.join(root, "out"))
+      }));
+      assert.throws(() => validateFamilyTestArtifact(root), /access policy mismatch/u);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }
+});
+
+test("bootstrap verifier checks root and index entrypoints in all three simulated role contexts", async () => {
+  const root = bootstrapRoot();
+  try {
+    buildFamilyBootstrap(root, origin);
+    const requested = new Map<string, Set<string>>();
+    const make = (context: "anonymous" | "nonmember" | "member") => {
+      const targets = new Set<string>();
+      requested.set(context, targets);
+      return fakeTransport(root, context, (target, response) => {
+        targets.add(target);
+        return response;
+      });
+    };
+    const evidence = await verifyFamilyTest(root, {
+      anonymous: make("anonymous"), nonmember: make("nonmember"), member: make("member")
+    });
+    assert.equal(evidence.purpose, "bootstrap");
+    for (const [context, targets] of requested) {
+      for (const target of ["/", "/index.html", "/_family-test/probe.html"]) {
+        assert.ok(targets.has(target), `${context} missing ${target}`);
+      }
+    }
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

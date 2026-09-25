@@ -343,9 +343,15 @@ gh workflow run family-test.yml --repo "$REPO" --ref main -f operation=bootstrap
 
 The solo fork runs after the owner's dispatch without an environment review
 pause; other repositories require independent environment approval. Bootstrap
-contains only the multilingual content-free login/denied pages plus the harmless
-role-protected `/_family-test/probe.html`, not recipes or media. It deploys to
-the test app's primary slot, never a named preview. Compare the upload action's returned URL to the
+contains exactly five files: `staticwebapp.config.json`, the multilingual
+content-free `/_family-test/login.html` and `/_family-test/denied.html`,
+`/_family-test/probe.html`, and root `index.html`. Azure's upload action requires
+the root entrypoint; it contains exactly the same harmless bytes as the probe,
+not recipes or media. Both `/` and `/index.html` remain protected by the unchanged
+`/*` catch-all requiring `family`, with no anonymous root exception. The exact
+inventory and page bytes are validated; noindex, no-store, CSP and NONPROMOTABLE
+artifact separation remain unchanged. It deploys to the test app's primary slot,
+never a named preview. Compare the upload action's returned URL to the
 ARM-discovered origin. An anonymous probe is not authenticated acceptance.
 If the app is accidentally public or the hostname differs, stop sharing it
 and investigate; do not proceed to a full-content upload.
